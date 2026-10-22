@@ -8,5 +8,5 @@ public enum GameColors
     Pink,
     Blue,
     Purple,
-    Brown,
+    White,
 }

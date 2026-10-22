@@ -6,7 +6,7 @@ public class Game
     public Grid Grid { get; private set; }
     public List<Path> PlayerPaths { get; private set; }
     
-    public Game(Level level)
+   public Game(Level level)
     {
         Level = level;
         Grid = new Grid();
@@ -14,10 +14,13 @@ public class Game
         SelectedColor = GameColors.No_Color;
         PlayerPaths = new List<Path>();
 
-        //Adds each ExtremePoints of a path inside the Game's grid.
         foreach (EndpointPair endpointPair in level.EndpointPairs)
         {
             PlayerPaths.Add(new Path(endpointPair));
+            
+            // Imposta i colori iniziali degli estremi sulla griglia
+            Grid.SetColor(endpointPair.Start, endpointPair.Color);
+            Grid.SetColor(endpointPair.End, endpointPair.Color);
         }
     }
 
@@ -52,6 +55,8 @@ public class Game
                 }
 
                 path.ClearPath();
+                Grid.SetColor(endpointPair.Start, endpointPair.Color);
+                Grid.SetColor(endpointPair.End, endpointPair.Color);
                 path.Extend(pos);
                 Grid.SetColor(pos, SelectedColor);
 
@@ -77,6 +82,13 @@ public class Game
     {
         Path path = GetPathByColor(SelectedColor);
 
+        // It permits to change the enpoint when antoher one of the same path is already selected.
+        if (IsTargetEndpoint(pos, SelectedColor))
+        {
+            SupportFunctionForExtendPath(path,pos);
+            
+        }
+
         //Check that the postion we need to add is near, in a Vertically or Horizontally way, to the Last path position  
         if (pos.IsNear(path.LastPosition()))
         {
@@ -99,17 +111,57 @@ public class Game
             GameColors cellColor = Grid.ReturnColorFromPosition(pos);
             if (cellColor == GameColors.No_Color || IsTargetEndpoint(pos, SelectedColor))
             {
-                path.Extend(pos);
-                Grid.SetColor(pos, SelectedColor);
+                SupportFunctionForExtendPath(path, pos);
+            }
+        } 
 
-                //Check if the path of that color is finished.
-                if (path.IsCompleted())
-                {
-                    SelectedColor = GameColors.No_Color; 
-                    CheckWin();
-                }
+    }
+
+    /// <summary>
+    /// A function that can be reused inside the ExtendPath func to have less repretitions.
+    /// </summary>
+    /// <returns></returns>
+    public void SupportFunctionForExtendPath(Path path, Position pos)
+    {
+        path.Extend(pos);
+        Grid.SetColor(pos, SelectedColor);
+
+        //Check if the path of that color is finished.
+        if (path.IsCompleted())
+        {
+            SelectedColor = GameColors.No_Color; 
+            CheckWin();
+        }
+    }
+
+    public void Press(Position pos)
+    {
+        if (IsGameWon) return;
+
+        if (SelectedColor == GameColors.No_Color)
+        {
+            StartPath(pos);
+        }
+        else
+        {
+            Path currentPath = GetPathByColor(SelectedColor);
+
+            if (IsAnyEndpoint(pos) && !IsTargetEndpoint(pos, SelectedColor))
+            {
+                StartPath(pos);
+            }
+            else
+            {
+                ExtendPath(pos);
+                Console.WriteLine("fine");
             }
         }
+    }
+
+
+    private bool IsAnyEndpoint(Position pos)
+    {
+        return Level.EndpointPairs.Any(pair => pair.Start.Equals(pos) || pair.End.Equals(pos));
     }
 
     private bool IsTargetEndpoint(Position pos, GameColors color)
